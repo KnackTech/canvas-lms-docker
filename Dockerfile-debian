@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile
 
-ARG NODE_VERSION=20
+ARG NODE_VERSION=18
 ARG RUBY_VERSION=3.1
 ARG CANVAS_HOME=/opt/canvas
 
@@ -9,6 +9,7 @@ FROM node:${NODE_VERSION}-bookworm-slim AS node
 FROM ruby:${RUBY_VERSION}-bookworm AS builder
 
 ARG YARN_VERSION=1.22.21
+ARG BUNDLER_VERSION=2.4.22
 ARG CANVAS_HOME
 
 ENV NODE_OPTIONS=--openssl-legacy-provider
@@ -29,7 +30,7 @@ apt-get install -y --no-install-recommends \
 npm update -g npm
 npm install -g yarn@${YARN_VERSION}
 
-git clone -b prod --depth 1 https://github.com/instructure/canvas-lms.git ${CANVAS_HOME}
+git clone -b stable/2024-01-17 --depth 1 https://github.com/instructure/canvas-lms.git ${CANVAS_HOME}
 EOF
 
 WORKDIR ${CANVAS_HOME}
@@ -39,6 +40,7 @@ yarn config set network-timeout 600000
 yarn config set network-concurrency 1
 yarn install --pure-lockfile --ignore-optional
 
+gem install bundler -v ${BUNDLER_VERSION} --no-document
 bundle install
 bundle exec rake canvas:compile_assets_dev
 
@@ -47,7 +49,6 @@ rm -rf \
     .github \
     .storybook \
     .vscode \
-    Courses \
     build \
     doc \
     docker-compose \
@@ -61,7 +62,6 @@ rm -rf \
     ui-build
 rm \
     .codeclimate.yml \
-    .devcontainer.json \
     .dive-ci \
     .dockerignore \
     .editorconfig \
@@ -98,9 +98,8 @@ rm \
     jest.config.js \
     karma.conf.js \
     package.json \
-    rspack.config.js \
     tsconfig.json \
-    vitest.*.ts \
+    webpack.config.js \
     yarn.lock
 EOF
 
